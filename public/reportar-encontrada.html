@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reportar Mascota Encontrada</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #a1c4fd, #c2e9fb);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      margin: 0;
+    }
+    .form-box {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      width: 360px;
+    }
+    h2 {
+      text-align: center;
+      color: #444;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4c63af;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #3b4d8a;
+    }
+    #map {
+      width: 100%;
+      height: 300px;
+      margin: 8px 0;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-box">
+    <h2>Reportar Mascota Encontrada</h2>
+    <form id="reporteForm" enctype="multipart/form-data">
+      <a href="/inicio.html" style="text-decoration: none; color: #6e01a5; font-weight: bold;">Volver a Inicio</a>
+      <select id="tipo" required>
+        <option value="">Tipo de animal</option>
+        <option value="perro">Perro</option>
+        <option value="gato">Gato</option>
+      </select>
+
+      <select id="raza_id" required>
+        <option value="">Selecciona una raza</option>
+      </select>
+
+      <input type="text" id="color" placeholder="Color" required>
+      <input type="file" id="imagen" name="imagen" accept="image/*" required>
+
+      <div id="map"></div>
+      <input type="hidden" id="latitud">
+      <input type="hidden" id="longitud">
+
+      <textarea id="descripcion" placeholder="Descripción adicional" required></textarea>
+      <input type="text" id="contacto" placeholder="Número o email de contacto" required>
+      <button type="submit">Enviar reporte</button>
+    </form>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Inicializar el mapa
+        const map = L.map('map').setView([4.624335, -74.063644], 13); 
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+        }).addTo(map);
+    
+        let marker;
+        map.on('click', (e) => {
+        if (marker) {
+            map.removeLayer(marker);
+        }
+        marker = L.marker(e.latlng).addTo(map);
+        document.getElementById('latitud').value = e.latlng.lat;
+        document.getElementById('longitud').value = e.latlng.lng;
+        });
+    
+        // Cargar razas desde la API
+        async function cargarRazas() {
+        try {
+            const res = await fetch('/api/razas');
+            const razas = await res.json();
+            const razaSelect = document.getElementById('raza_id');
+            razas.forEach(raza => {
+            const option = document.createElement('option');
+            option.value = raza.id;
+            option.textContent = raza.nombre_raza;
+            razaSelect.appendChild(option);
+            });
+        } catch (err) {
+            console.error('Error al cargar las razas:', err);
+        }
+        }
+    
+        cargarRazas();
+  document.getElementById('reporteForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+  
+    const formData = new FormData();
+    formData.append('usuario_id', localStorage.getItem('usuario_id') || 1);
+    formData.append('tipo', document.getElementById('tipo').value);
+    formData.append('raza_id', document.getElementById('raza_id').value);
+    formData.append('color', document.getElementById('color').value);
+    formData.append('latitud', document.getElementById('latitud').value);
+    formData.append('longitud', document.getElementById('longitud').value);
+    formData.append('descripcion', document.getElementById('descripcion').value);
+    formData.append('contacto', document.getElementById('contacto').value);
+    formData.append('tipo_reporte', 'encontrada');
+    formData.append('petimagen', document.getElementById('imagen').files[0]);
+
+  
+    try {
+      const res = await fetch('/api/reportes', {
+        method: 'POST',
+        enctype: 'multipart/form-data',
+        body: formData
+      });
+  
+      const data = await res.json();
+      alert(data.message || data.error);
+      if (res.ok) location.href = '/inicio.html';
+    } catch (err) {
+      alert('Error de red o del servidor');
+      console.error(err);
+    }
+  });  
+  </script>
+</body>
+</html>

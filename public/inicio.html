@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Inicio - Reportes de Mascotas</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f9f9f9;
+    }
+    header {
+      background: #4c63af;
+      padding: 1rem;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    nav button {
+      background: white;
+      color: #4c63af;
+      font-weight: bold;
+      border: none;
+      padding: 0.5rem 1rem;
+      margin: 0 0.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    nav button.active {
+      background: #2f407a;
+      color: white;
+    }
+    #map {
+      height: 250px;
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+    #lista-reportes {
+      display: flex;
+      flex-wrap: wrap;
+      padding: 1rem;
+      gap: 1rem;
+      justify-content: center;
+    }
+    .card {
+      background: white;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+    }
+    .card h3 {
+      margin: 0.3rem 0;
+    }
+    .card p {
+      margin: 0.2rem 0;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+    .btnReportePerdidas {
+      color: rgb(128, 5, 5);
+    }
+    .btnReporteEncontradas {
+      color: rgb(4, 92, 4);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <strong>Hola, <span id="nombreUsuario">usuario</span></strong>
+    <nav>
+      <button id="btnEncontradas" class="active">Encontradas</button>
+      <button id="btnPerdidas">Perdidas</button>
+      <button class="btnReportePerdidas" onclick="location.href='/reportar-perdida.html'">Reportar Mascota Perdida</button>
+      <button class="btnReporteEncontradas" onclick="location.href='/reportar-encontrada.html'">Reportar Mascota Encontrada</button>
+    </nav>
+  </header>
+
+  <div id="map"></div>
+  <section id="lista-reportes"></section>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    const nombre = localStorage.getItem('nombre') || 'usuario';
+    document.getElementById('nombreUsuario').innerText = nombre;
+
+    const map = L.map('map').setView([4.624335, -74.063644], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let markers = [];
+
+    function cargarReportes(tipo) {
+      fetch(`/api/reportes?tipo=${tipo}`)
+        .then(res => res.json())
+        .then(data => {
+          markers.forEach(m => map.removeLayer(m));
+          markers = [];
+          document.getElementById('lista-reportes').innerHTML = '';
+
+          data.forEach(reporte => {
+            if (reporte.latitud && reporte.longitud) {
+              const popup = `
+                <strong>${reporte.tipo_reporte.toUpperCase()}</strong><br>
+                ${reporte.tipo} - ${reporte.color}<br>
+                ${reporte.descripcion}
+              `;
+              const marker = L.marker([reporte.latitud, reporte.longitud])
+                .addTo(map)
+                .bindPopup(popup);
+              markers.push(marker);
+            }
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+              <img src="/uploads/${reporte.imagen}" alt="Mascota" /
+              <h3>${reporte.tipo_reporte.toUpperCase()}</h3>
+              <p><strong>Tipo:</strong> ${reporte.tipo}</p>
+              <p><strong>Color:</strong> ${reporte.color}</p>
+              <p><strong>Descripción:</strong> ${reporte.descripcion}</p>
+              <p><strong>Contacto:</strong> ${reporte.contacto}</p>
+            `;
+            document.getElementById('lista-reportes').appendChild(card);
+          });
+        });
+    }
+
+    document.getElementById('btnEncontradas').addEventListener('click', () => {
+      activarBoton('btnEncontradas');
+      cargarReportes('encontrada');
+    });
+
+    document.getElementById('btnPerdidas').addEventListener('click', () => {
+      activarBoton('btnPerdidas');
+      cargarReportes('perdida');
+    });
+
+    function activarBoton(idActivo) {
+      document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(idActivo).classList.add('active');
+    }
+
+    cargarReportes('encontrada');
+  </script>
+</body>
+</html>
