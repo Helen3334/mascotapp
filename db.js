@@ -1,8 +1,6 @@
 const mysql = require('mysql2');
 require('dotenv').config();
 
-const Sequelize = require('sequelize');
-
 const DATABASE_HOST = process.env.DB_HOST;
 const DATABASE_PORT = process.env.DB_PORT;
 const DATABASE_NAME = process.env.DB_NAME;
