@@ -84,7 +84,7 @@
       const correo = document.getElementById('correo').value;
       const contraseña = document.getElementById('contraseña').value;
 
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch('api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ correo, contraseña })
