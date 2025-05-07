@@ -33,3 +33,9 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.listen(PORT, () => {
   console.log(`Servidor iniciado en http://localhost:${PORT}`);
 });
+
+const cors = require('cors');
+app.use(cors({
+  origin: 'https://mascotapp-b04v.onrender.com/',
+  credentials: true
+}));
