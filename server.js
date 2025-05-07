@@ -5,7 +5,13 @@ require('dotenv').config();
 const path = require('path');
 
 const app = express();
-app.use(cors());
+
+const cors = require('cors');
+app.use(cors({
+  origin: 'https://mascotapp-b04v.onrender.com',
+  credentials: true
+}));
+
 app.use(express.json());
 
 
@@ -33,9 +39,3 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.listen(PORT, () => {
   console.log(`Servidor iniciado en http://localhost:${PORT}`);
 });
-
-const cors = require('cors');
-app.use(cors({
-  origin: 'https://mascotapp-b04v.onrender.com',
-  credentials: true
-}));
