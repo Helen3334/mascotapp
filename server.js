@@ -36,6 +36,6 @@ app.listen(PORT, () => {
 
 const cors = require('cors');
 app.use(cors({
-  origin: 'https://mascotapp-b04v.onrender.com/',
+  origin: 'https://mascotapp-b04v.onrender.com',
   credentials: true
 }));
