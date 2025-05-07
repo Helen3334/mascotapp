@@ -6,7 +6,6 @@ const path = require('path');
 
 const app = express();
 
-const cors = require('cors');
 app.use(cors({
   origin: 'https://mascotapp-b04v.onrender.com',
   credentials: true
