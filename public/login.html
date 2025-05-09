@@ -103,6 +103,29 @@
         document.getElementById('mensaje').innerText = data.error;
       }
     });
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const correo = document.getElementById('correo').value;
+  const contraseña = document.getElementById('contraseña').value;
+
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ correo, contraseña })
+  });
+
+  const data = await res.json();
+
+  if (res.ok) {
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('nombre', data.usuario.nombre); // Asegúrate que esto esté presente
+    window.location.href = "/inicio.html";
+  } else {
+    document.getElementById('mensaje').innerText = data.error;
+  }
+});
+
   </script>
 </body>
 </html>

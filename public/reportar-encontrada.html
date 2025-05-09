@@ -22,7 +22,7 @@
       height: 100%;
       margin: 0;
     }
-    .modal {
+      .modal {
     position: fixed;
     top: 0;
     left: 0;
@@ -147,42 +147,85 @@
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <script>
-        // Inicializar el mapa
-        const map = L.map('map').setView([4.624335, -74.063644], 13); 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '© OpenStreetMap'
-        }).addTo(map);
-    
-        let marker;
-        map.on('click', (e) => {
-        if (marker) {
-            map.removeLayer(marker);
-        }
-        marker = L.marker(e.latlng).addTo(map);
-        document.getElementById('latitud').value = e.latlng.lat;
-        document.getElementById('longitud').value = e.latlng.lng;
+<script>
+  // Inicializar el mapa
+  const map = L.map('map').setView([4.624335, -74.063644], 13); 
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+  
+  let marker;
+  map.on('click', (e) => {
+    if (marker) {
+      map.removeLayer(marker);
+    }
+    marker = L.marker(e.latlng).addTo(map);
+    document.getElementById('latitud').value = e.latlng.lat;
+    document.getElementById('longitud').value = e.latlng.lng;
+  });
+
+  // Texto guía para el mapa
+  document.getElementById('map').insertAdjacentHTML(
+    'beforebegin', 
+    '<p style="color: #333; margin-top: 10px;">Haz clic en el mapa para seleccionar la ubicación de la mascota que encontró.</p>'
+  );
+
+  // Verificar que la API de razas está activa y filtrar correctamente
+  async function cargarRazas(tipoAnimal) {
+    try {
+      console.log("Cargando razas para:", tipoAnimal);
+      const res = await fetch('/api/razas');
+      
+      if (!res.ok) throw new Error('Error al conectar con la API de razas');
+      
+      const razas = await res.json();
+      console.log("Razas obtenidas:", razas);
+      
+      if (!Array.isArray(razas)) {
+        console.error("La API de razas no devolvió un arreglo.");
+        alert("Error al cargar las razas. Verifica que la API esté activa.");
+        return;
+      }
+
+      const razaSelect = document.getElementById('raza_id');
+      razaSelect.innerHTML = '<option value="">Selecciona una raza</option>'; // Limpiar opciones
+
+      if (!tipoAnimal) {
+        console.error("Tipo de animal no seleccionado.");
+        return;
+      }
+
+      // Filtrar razas según el tipo seleccionado (Perro o Gato)
+      razas
+        .filter(raza => raza.tipoAnimal?.toLowerCase() === tipoAnimal.toLowerCase())
+        .forEach(raza => {
+          const option = document.createElement('option');
+          option.value = raza.id;
+          option.textContent = raza.nombre_raza;
+          razaSelect.appendChild(option);
         });
-    
-        // Cargar razas desde la API
-        async function cargarRazas() {
-        try {
-            const res = await fetch('/api/razas');
-            const razas = await res.json();
-            const razaSelect = document.getElementById('raza_id');
-            razas.forEach(raza => {
-            const option = document.createElement('option');
-            option.value = raza.id;
-            option.textContent = raza.nombre_raza;
-            razaSelect.appendChild(option);
-            });
-        } catch (err) {
-            console.error('Error al cargar las razas:', err);
-        }
-        }
-    
-        cargarRazas();
+
+      console.log("Razas filtradas:", razaSelect.innerHTML);
+
+    } catch (err) {
+      console.error('Error al cargar las razas:', err);
+      alert('Error al cargar las razas. Verifica que la API esté activa.');
+    }
+  }
+
+  // Evento para cambiar razas según el tipo
+  document.getElementById('tipo').addEventListener('change', (e) => {
+    const tipoSeleccionado = e.target.value;
+    console.log("Tipo seleccionado:", tipoSeleccionado);
+    if (tipoSeleccionado) {
+      cargarRazas(tipoSeleccionado);
+    } else {
+      document.getElementById('raza_id').innerHTML = '<option value="">Selecciona una raza</option>';
+    }
+  });
+
+  // Inicialización del formulario con autenticación
   document.getElementById('reporteForm').addEventListener('submit', async (e) => {
     e.preventDefault();
   
@@ -198,12 +241,21 @@
     formData.append('tipo_reporte', 'encontrada');
     formData.append('petimagen', document.getElementById('imagen').files[0]);
 
-  
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert("Debes iniciar sesión.");
+        window.location.href = '/login.html';
+        return;
+      }
+
       const res = await fetch('/api/reportes', {
         method: 'POST',
         enctype: 'multipart/form-data',
-        body: formData
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
   
       const data = await res.json();
@@ -213,7 +265,16 @@
       alert('Error de red o del servidor');
       console.error(err);
     }
-  });  
-  </script>
+  });
+
+  // Verificar si el usuario está autenticado al cargar la página
+  document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert("Debes iniciar sesión.");
+      window.location.href = '/login.html';
+    }
+  });
+</script>
 </body>
 </html>

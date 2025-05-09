@@ -180,32 +180,88 @@
   </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script>
-    const nombre = localStorage.getItem('nombre') || 'usuario';
-    document.getElementById('nombreUsuario').innerText = nombre;
+<script>
+  const nombre = localStorage.getItem('nombre') || 'usuario';
+  document.getElementById('nombreUsuario').innerText = nombre;
 
-    const logoutModal = document.getElementById('logoutModal');
-    document.getElementById('btnLogout').addEventListener('click', () => {
-      logoutModal.style.display = 'flex';
-    });
+  const logoutModal = document.getElementById('logoutModal');
+  document.getElementById('btnLogout').addEventListener('click', () => {
+    logoutModal.style.display = 'flex';
+  });
 
-    document.getElementById('confirmLogout').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('nombre');
-      window.location.href = '/login.html';
-    });
+  document.getElementById('confirmLogout').addEventListener('click', () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('nombre');
+    window.location.href = '/login.html';
+  });
 
-    document.getElementById('cancelLogout').addEventListener('click', () => {
-      logoutModal.style.display = 'none';
-    });
+  document.getElementById('cancelLogout').addEventListener('click', () => {
+    logoutModal.style.display = 'none';
+  });
 
-    // Mapa y carga de reportes
-    const map = L.map('map').setView([4.624335, -74.063644], 10);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
+  // Inicializar el mapa
+  const map = L.map('map').setView([4.624335, -74.063644], 10);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
 
+  let reportMarkers = [];
+
+  document.getElementById('btnEncontradas').addEventListener('click', () => {
     cargarReportes('encontrada');
-  </script>
+    document.getElementById('btnEncontradas').classList.add('active');
+    document.getElementById('btnPerdidas').classList.remove('active');
+  });
+
+  document.getElementById('btnPerdidas').addEventListener('click', () => {
+    cargarReportes('perdida');
+    document.getElementById('btnPerdidas').classList.add('active');
+    document.getElementById('btnEncontradas').classList.remove('active');
+  });
+
+  async function cargarReportes(tipo) {
+    const res = await fetch(`/api/reportes?tipo=${tipo}`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    const reportes = await res.json();
+    const listaReportes = document.getElementById('lista-reportes');
+    listaReportes.innerHTML = ''; // Limpiar lista de tarjetas
+
+    // Limpiar marcadores previos del mapa
+    reportMarkers.forEach(marker => map.removeLayer(marker));
+    reportMarkers = [];
+
+    reportes.forEach(reporte => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <img src="/uploads/${reporte.imagen}" alt="Imagen de la mascota">
+        <h3>${reporte.tipo} - ${reporte.color}</h3>
+        <p><strong>Descripción:</strong>${reporte.descripcion}</p>
+        <p><strong>Contacto:</strong> ${reporte.contacto}</p>
+      `;
+      listaReportes.appendChild(card);
+
+      // Crear marcador en el mapa si tiene coordenadas
+      if (reporte.latitud && reporte.longitud) {
+        const marker = L.marker([reporte.latitud, reporte.longitud])
+          .addTo(map)
+          .bindPopup(`
+            <b>${reporte.tipo_reporte.toUpperCase()}</b><br>
+            ${reporte.tipo} - ${reporte.color}<br>
+            <strong>Raza:</strong> ${reporte.raza || 'No especificada'}<br>
+            ${reporte.descripcion}<br>
+            <i>Contacto: ${reporte.contacto}</i>
+          `);
+        reportMarkers.push(marker);
+      }
+    });
+  }
+
+  // Cargar inicialmente los reportes de mascotas encontradas
+  cargarReportes('encontrada');
+</script>
 </body>
 </html>

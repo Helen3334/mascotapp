@@ -22,78 +22,49 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.post('/reportes',verificarToken, upload.single('petimagen'), (req, res) => {
-  const {
-    usuario_id,
-    nombre,
-    tipo,
-    raza_id,
-    color,
-    latitud,
-    longitud,
-    descripcion,
-    contacto,
-    tipo_reporte,
-
-  } = req.body;
-
+// Reportar mascota (con imagen)
+router.post('/reportes', verificarToken, upload.single('petimagen'), async (req, res) => {
+  const { usuario_id, nombre, tipo, raza_id, color, latitud, longitud, descripcion, contacto, tipo_reporte } = req.body;
   const imagen = req.file ? req.file.filename : null;
 
-  const sql = `
-    INSERT INTO reportes_mascotas 
-    (usuario_id, nombre, tipo, raza_id, color, latitud, longitud, descripcion, contacto, tipo_reporte, imagen) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  db.query(sql, [
-    usuario_id,
-    nombre || null,
-    tipo,
-    raza_id,
-    color,
-    latitud,
-    longitud,
-    descripcion,
-    contacto,
-    tipo_reporte,
-    imagen
-  ], (err, result) => {
-    if (err) {
-      console.error('Error al guardar reporte:', err);
-      return res.status(500).json({ error: 'Error al guardar el reporte' });
-    }
+  try {
+    const sql = `
+      INSERT INTO reportes_mascotas 
+      (usuario_id, nombre, tipo, raza_id, color, latitud, longitud, descripcion, contacto, tipo_reporte, imagen) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    await db.query(sql, [
+      usuario_id, nombre || null, tipo, raza_id, color, 
+      latitud, longitud, descripcion, contacto, tipo_reporte, imagen
+    ]);
 
     res.status(201).json({ message: 'Reporte con imagen guardado correctamente' });
-  });
+  } catch (err) {
+    console.error('Error al guardar reporte:', err);
+    res.status(500).json({ error: 'Error al guardar el reporte' });
+  }
 });
 
-// 🔹 Obtener todos los reportes
-router.get('/reportes', verificarToken, (req, res) => {
+// Obtener todos los reportes
+// Obtener todos los reportes
+router.get('/reportes', verificarToken, async (req, res) => {
   const { tipo } = req.query;
-  const sql = tipo
-    ? 'SELECT * FROM reportes_mascotas WHERE tipo_reporte = ?'
-    : 'SELECT * FROM reportes_mascotas';
-  const params = tipo ? [tipo] : [];
 
-  db.query(sql, params, (err, results) => {
-    if (err) {
-      console.error('Error al obtener reportes:', err);
-      return res.status(500).json({ error: 'Error al obtener reportes' });
-    }
-
+  try {
+    const sql = `
+      SELECT 
+        r.*, 
+        ra.nombre_raza AS raza 
+      FROM reportes_mascotas r 
+      LEFT JOIN razas ra ON r.raza_id = ra.id 
+      ${tipo ? 'WHERE r.tipo_reporte = ?' : ''}
+    `;
+    const [results] = await db.query(sql, tipo ? [tipo] : []);
     res.json(results);
-  });
-});
-
-// 🔹 Obtener razas
-router.get('/razas', (req, res) => {
-  db.query('SELECT * FROM razas ORDER BY tipo, nombre_raza ', (err, results) => {
-    if (err) {
-      console.error('Error al obtener razas:', err);
-      return res.status(500).json({ error: 'Error al obtener razas' });
-    }
-    res.json(results);
-  });
-});
+  } catch (err) {
+    console.error('Error al obtener reportes:', err);
+    res.status(500).json({ error: 'Error al obtener reportes' });
+  }
+})
 
 module.exports = router;
