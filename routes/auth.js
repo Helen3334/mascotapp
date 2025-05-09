@@ -1,7 +1,9 @@
+// auth.js (Backend)
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
+const axios = require('axios');
 require('dotenv').config();
 
 const router = express.Router();
@@ -12,6 +14,22 @@ router.post('/register', async (req, res) => {
 
   if (!nombre || !correo || !contraseña) {
     return res.status(400).json({ error: 'Todos los campos son obligatorios' });
+  }
+
+  // Validar correo con Abstract API
+  try {
+    const abstractApiKey = process.env.ABSTRACT_API_KEY;
+    const response = await axios.get(`https://emailvalidation.abstractapi.com/v1/?api_key=${abstractApiKey}&email=${correo}`);
+    const emailData = response.data;
+
+    console.log('Verificación de Abstract API:', emailData);
+
+    if (!emailData.is_valid_format.value || emailData.deliverability !== 'DELIVERABLE') {
+      return res.status(400).json({ error: 'El correo ingresado no es válido o no existe.' });
+    }
+  } catch (error) {
+    console.error('Error en la verificación del correo con Abstract:', error);
+    return res.status(500).json({ error: 'Error al verificar el correo. Inténtalo más tarde.' });
   }
 
   // Verifica correo ya registrado
@@ -47,7 +65,7 @@ router.post('/register', async (req, res) => {
   });
 });
 
-/// LOGIN
+// LOGIN
 router.post('/login', (req, res) => {
   const { correo, contraseña } = req.body;
 
@@ -96,4 +114,5 @@ router.post('/login', (req, res) => {
 });
 
 module.exports = router;
+
 

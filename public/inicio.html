@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <title>Inicio - Reportes de Mascotas</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+      }
+    });
+  </script>
   <style>
     body {
       margin: 0;
@@ -17,6 +26,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: relative;
+    }
+    nav {
+      display: flex;
+      gap: 0.5rem;
     }
     nav button {
       background: white;
@@ -31,6 +45,21 @@
     nav button.active {
       background: #2f407a;
       color: white;
+    }
+    /* Botón de Cerrar Sesión (Esquina Superior Derecha) */
+    #btnLogout {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 1.5rem;
+      color: rgb(208, 3, 3);
+      transition: color 0.3s;
+    }
+    #btnLogout:hover {
+      color: #e74c3c;
     }
     #map {
       height: 250px;
@@ -61,19 +90,64 @@
       border-radius: 8px;
       margin-bottom: 0.5rem;
     }
-    .card h3 {
-      margin: 0.3rem 0;
+
+    /* Estilos del Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
     }
-    .card p {
-      margin: 0.2rem 0;
-      font-size: 0.95rem;
+    .modal-content {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 12px;
+      width: 320px;
+      max-width: 90%;
       text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      animation: modalShow 0.3s ease;
     }
-    .btnReportePerdidas {
-      color: rgb(128, 5, 5);
+    .modal-content h3 {
+      font-size: 1.2rem;
+      margin-bottom: 15px;
     }
-    .btnReporteEncontradas {
-      color: rgb(4, 92, 4);
+    .modal-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+    .modal-actions button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #confirmLogout {
+      background: #e74c3c;
+      color: white;
+    }
+    #confirmLogout:hover {
+      background: #c0392b;
+    }
+    #cancelLogout {
+      background: #2ecc71;
+      color: white;
+    }
+    #cancelLogout:hover {
+      background: #27ae60;
+    }
+    @keyframes modalShow {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
     }
   </style>
 </head>
@@ -86,73 +160,50 @@
       <button class="btnReportePerdidas" onclick="location.href='/reportar-perdida.html'">Reportar Mascota Perdida</button>
       <button class="btnReporteEncontradas" onclick="location.href='/reportar-encontrada.html'">Reportar Mascota Encontrada</button>
     </nav>
+    <button id="btnLogout">
+      <i class="fas fa-power-off"></i>
+    </button>
   </header>
 
   <div id="map"></div>
   <section id="lista-reportes"></section>
+
+  <!-- Modal de Cierre de Sesión -->
+  <div id="logoutModal" class="modal">
+    <div class="modal-content">
+      <h3>¿Seguro que deseas cerrar sesión?</h3>
+      <div class="modal-actions">
+        <button id="confirmLogout">Sí, cerrar sesión</button>
+        <button id="cancelLogout">Cancelar</button>
+      </div>
+    </div>
+  </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
     const nombre = localStorage.getItem('nombre') || 'usuario';
     document.getElementById('nombreUsuario').innerText = nombre;
 
+    const logoutModal = document.getElementById('logoutModal');
+    document.getElementById('btnLogout').addEventListener('click', () => {
+      logoutModal.style.display = 'flex';
+    });
+
+    document.getElementById('confirmLogout').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      localStorage.removeItem('nombre');
+      window.location.href = '/login.html';
+    });
+
+    document.getElementById('cancelLogout').addEventListener('click', () => {
+      logoutModal.style.display = 'none';
+    });
+
+    // Mapa y carga de reportes
     const map = L.map('map').setView([4.624335, -74.063644], 10);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
-
-    let markers = [];
-
-    function cargarReportes(tipo) {
-      fetch(`/api/reportes?tipo=${tipo}`)
-        .then(res => res.json())
-        .then(data => {
-          markers.forEach(m => map.removeLayer(m));
-          markers = [];
-          document.getElementById('lista-reportes').innerHTML = '';
-
-          data.forEach(reporte => {
-            if (reporte.latitud && reporte.longitud) {
-              const popup = `
-                <strong>${reporte.tipo_reporte.toUpperCase()}</strong><br>
-                ${reporte.tipo} - ${reporte.color}<br>
-                ${reporte.descripcion}
-              `;
-              const marker = L.marker([reporte.latitud, reporte.longitud])
-                .addTo(map)
-                .bindPopup(popup);
-              markers.push(marker);
-            }
-
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-              <img src="/uploads/${reporte.imagen}" alt="Mascota" /
-              <h3>${reporte.tipo_reporte.toUpperCase()}</h3>
-              <p><strong>Tipo:</strong> ${reporte.tipo}</p>
-              <p><strong>Color:</strong> ${reporte.color}</p>
-              <p><strong>Descripción:</strong> ${reporte.descripcion}</p>
-              <p><strong>Contacto:</strong> ${reporte.contacto}</p>
-            `;
-            document.getElementById('lista-reportes').appendChild(card);
-          });
-        });
-    }
-
-    document.getElementById('btnEncontradas').addEventListener('click', () => {
-      activarBoton('btnEncontradas');
-      cargarReportes('encontrada');
-    });
-
-    document.getElementById('btnPerdidas').addEventListener('click', () => {
-      activarBoton('btnPerdidas');
-      cargarReportes('perdida');
-    });
-
-    function activarBoton(idActivo) {
-      document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
-      document.getElementById(idActivo).classList.add('active');
-    }
 
     cargarReportes('encontrada');
   </script>

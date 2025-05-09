@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const multer = require('multer');
 const fs = require('fs');
+const verificarToken = require('./authMiddleware');
 
 // Configuración de almacenamiento
 const uploadFolder = 'uploads';
@@ -11,7 +12,7 @@ if (!fs.existsSync(uploadFolder)) {
 }
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadFolder); // Carpeta donde guardar imágenes
+    cb(null, uploadFolder); // Carpeta para guardar imágenes
   },
   filename: (req, file, cb) => {
     const uniqueName = Date.now() + '-' + file.originalname;
@@ -21,7 +22,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.post('/reportes', upload.single('petimagen'), (req, res) => {
+router.post('/reportes',verificarToken, upload.single('petimagen'), (req, res) => {
   const {
     usuario_id,
     nombre,
@@ -67,7 +68,7 @@ router.post('/reportes', upload.single('petimagen'), (req, res) => {
 });
 
 // 🔹 Obtener todos los reportes
-router.get('/reportes', (req, res) => {
+router.get('/reportes', verificarToken, (req, res) => {
   const { tipo } = req.query;
   const sql = tipo
     ? 'SELECT * FROM reportes_mascotas WHERE tipo_reporte = ?'

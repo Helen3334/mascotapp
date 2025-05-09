@@ -81,20 +81,51 @@
   <script>
     document.getElementById('registerForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-  
+    
       const nombre = document.getElementById('nombre').value;
       const correo = document.getElementById('correo').value;
       const contraseña = document.getElementById('contraseña').value;
   
+      // Validar formato del correo (regex)
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(correo)) {
+        document.getElementById('mensaje').innerText = 'El formato del correo no es válido.';
+        return;
+      }
   
+      // Verificar dominio del correo
+      const domain = correo.split('@')[1];
+      const isDomainValid = await verificarDominioMX(domain);
+      if (!isDomainValid) {
+        document.getElementById('mensaje').innerText = 'El dominio del correo no es válido o no está configurado para recibir correos.';
+        return;
+      }
+  
+      // Si el correo es válido, continuar con el registro
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre, correo, contraseña })
       });
-  
+      
       const data = await res.json();
       document.getElementById('mensaje').innerText = data.mensaje || data.error;
     });
+  
+    // Función para verificar si el dominio tiene servidores MX configurados
+    async function verificarDominioMX(dominio) {
+      try {
+        const response = await fetch(`https://dns.google/resolve?name=${dominio}&type=MX`);
+        const data = await response.json();
+        console.log('Verificación MX:', data);
+        return data.Answer && data.Answer.length > 0;
+      } catch (error) {
+        console.error('Error al verificar el dominio:', error);
+        return false;
+      }
+    }
   </script>
+  
+</body>
+</html>  
   

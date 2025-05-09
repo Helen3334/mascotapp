@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <title>Reportes en el Mapa</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/login.html';
+      }
+    });
+  </script>
   <style>
     body, html {
       margin: 0;
