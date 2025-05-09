@@ -45,8 +45,18 @@ router.post('/reportes', verificarToken, upload.single('petimagen'), async (req,
   }
 });
 
-// Obtener todos los reportes
-// Obtener todos los reportes
+
+router.get('/razas', async (req, res) => {
+  try {
+    const [razas] = await db.query('SELECT * FROM razas');
+    res.status(200).json(razas);
+  } catch (err) {
+    console.error('Error al obtener las razas:', err);
+    res.status(500).json({ error: 'Error al obtener las razas' });
+  }
+});
+
+
 router.get('/reportes', verificarToken, async (req, res) => {
   const { tipo } = req.query;
 
