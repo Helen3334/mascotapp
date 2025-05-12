@@ -12,25 +12,87 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      overflow: hidden;
+      position: relative;
+      flex-direction: column;
     }
+
+    .background-animals {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .background-animals img {
+      position: absolute;
+      max-width: 200%;
+      width: 300px;
+      animation: float 4s infinite ease-in-out;
+      opacity: 0.9;
+      border: 5px solid #ffffff;
+      border-radius: 12px;
+    }
+
+    .background-animals .dog {
+      left: 50px;
+      bottom: 0;
+      animation-delay: 0.5s;
+    }
+
+    .background-animals .cat {
+      right: 50px;
+      bottom: 0;
+      animation-delay: 1s;
+    }
+
+    .welcome-text {
+      text-align: center;
+      color: #535353;
+      margin-bottom: 1rem;
+      font-size: 2rem;
+      font-weight: bold;
+      color: #db51f3;
+      text-shadow: 2px 2px 4px #5f2ce133;
+      animation: fadeIn 2s ease-in-out;
+      z-index: 2;
+    }
+
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(-20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
     .container {
       background: white;
       padding: 2rem;
       border-radius: 12px;
       box-shadow: 0 0 10px rgba(0,0,0,0.2);
-      width: 300px;
+      width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 2;
     }
-    h2 {
+
+    .description {
       text-align: center;
-      color: #333;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+      color: #2f2d2d;
     }
+
     input {
       width: 100%;
       padding: 10px;
-      margin: 8px 0;
+      margin: 10px 0;
       border: 1px solid #ccc;
       border-radius: 8px;
     }
+
     button {
       width: 100%;
       padding: 10px;
@@ -41,30 +103,29 @@
       cursor: pointer;
       font-weight: bold;
     }
+
     button:hover {
       background-color: #3b4d8a;
     }
-    #mensaje {
-      margin-top: 1rem;
-      text-align: center;
-      color: #d9534f;
-    }
-    .link {
-      text-align: center;
-      margin-top: 1rem;
-    }
-    .link a {
-      color: #4c63af;
-      text-decoration: none;
-      font-weight: bold;
-    }
-    .link a:hover {
-      text-decoration: underline;
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
     }
   </style>
 </head>
 <body>
+  <div class="background-animals">
+    <img src="/uploads/perrito.png" alt="Perrito" class="dog">
+    <img src="/uploads/gatito.png" alt="Gatito" class="cat">
+  </div>
+
+  <div class="welcome-text">Bienvenido al Sistema de Reportes de Mascotas</div>
+
   <div class="container">
+    <div class="description">
+      <p>Este sistema te permite reportar mascotas perdidas y encontradas de manera gratuit para ayudar a que regresen a casa y colaborar con la comunidad para el bienestar de las mascotas.</p>
+    </div>
     <h2>Iniciar Sesión</h2>
     <form id="loginForm">
       <input type="email" id="correo" placeholder="Correo" required>
@@ -72,9 +133,7 @@
       <button type="submit">Entrar</button>
     </form>
     <p id="mensaje"></p>
-    <div class="link">
-      ¿No tienes cuenta? <a href="register.html">Regístrate aquí</a>
-    </div>
+    <div class="link">¿No tienes cuenta? <a href="register.html">Regístrate aquí</a></div>
   </div>
 
   <script>
@@ -93,39 +152,13 @@
       const data = await res.json();
 
       if (res.ok) {
-        // Guardar nombre y token para mostrar en inicio
         localStorage.setItem('token', data.token);
         localStorage.setItem('nombre', data.usuario.nombre);
-
-        // Redirigir a inicio
         window.location.href = "/inicio.html";
       } else {
         document.getElementById('mensaje').innerText = data.error;
       }
     });
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
-  const correo = document.getElementById('correo').value;
-  const contraseña = document.getElementById('contraseña').value;
-
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ correo, contraseña })
-  });
-
-  const data = await res.json();
-
-  if (res.ok) {
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('nombre', data.usuario.nombre); // Asegúrate que esto esté presente
-    window.location.href = "/inicio.html";
-  } else {
-    document.getElementById('mensaje').innerText = data.error;
-  }
-});
-
   </script>
 </body>
 </html>
